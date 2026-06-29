@@ -1,37 +1,59 @@
+import { CheckSquare, SlidersHorizontal } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 
 const STATUS_OPTIONS = [
   { value: "", label: "All" },
   { value: "pending", label: "Active" },
-  { value: "completed", label: "Completed" },
+  { value: "completed", label: "Done" },
 ];
 
 const PRIORITY_OPTIONS = [
-  { value: "", label: "All priorities" },
+  { value: "", label: "Any priority" },
   { value: "high", label: "High" },
   { value: "medium", label: "Medium" },
   { value: "low", label: "Low" },
 ];
 
 const SORT_OPTIONS = [
-  { value: "-createdAt", label: "Created (newest)" },
-  { value: "createdAt", label: "Created (oldest)" },
-  { value: "dueDate", label: "Due date (soonest)" },
-  { value: "-dueDate", label: "Due date (latest)" },
-  { value: "-priority", label: "Priority (high first)" },
-  { value: "priority", label: "Priority (low first)" },
+  { value: "-createdAt", label: "Newest first" },
+  { value: "createdAt", label: "Oldest first" },
+  { value: "dueDate", label: "Due soonest" },
+  { value: "-dueDate", label: "Due latest" },
+  { value: "-priority", label: "Priority ↓" },
+  { value: "priority", label: "Priority ↑" },
 ];
+
+function PillGroup({ label, value, options, onChange }) {
+  return (
+    <div className="space-y-2">
+      <span className="section-label">{label}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((option) => (
+          <button
+            key={option.value || "all"}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "filter-pill",
+              value === option.value && "filter-pill-active"
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function FilterSelect({ label, value, options, onChange }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs uppercase tracking-[0.12em] text-text-muted">
-        {label}
-      </span>
+    <div className="filter-select-wrap min-w-0 flex-1 sm:min-w-[8.5rem] sm:flex-none">
+      <span className="section-label">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-w-[9rem] border-0 border-b border-border bg-transparent px-0 py-1.5 text-sm text-text shadow-none focus:border-accent focus:ring-0"
+        className="filter-select"
       >
         {options.map((option) => (
           <option key={option.value || "all"} value={option.value}>
@@ -39,7 +61,7 @@ function FilterSelect({ label, value, options, onChange }) {
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 
@@ -62,26 +84,42 @@ export function TodoFilterBar({
   ];
 
   return (
-    <div className="flex flex-col gap-4 border-b border-border pb-4">
-      <div className="flex flex-wrap items-end gap-4">
-        <FilterSelect
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <PillGroup
           label="Status"
           value={status}
           options={STATUS_OPTIONS}
           onChange={onStatusChange}
         />
+        <button
+          type="button"
+          onClick={onToggleSelectionMode}
+          className={cn(
+            "btn-secondary shrink-0 gap-1.5 !py-1.5 text-sm",
+            selectionMode && "!border-accent !bg-accent !text-surface"
+          )}
+        >
+          <CheckSquare size={14} />
+          {selectionMode ? "Cancel" : "Select"}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3">
         <FilterSelect
           label="Priority"
           value={priority}
           options={PRIORITY_OPTIONS}
           onChange={onPriorityChange}
         />
-        <FilterSelect
-          label="Tag"
-          value={tag}
-          options={tagOptions}
-          onChange={onTagChange}
-        />
+        {availableTags.length > 0 ? (
+          <FilterSelect
+            label="Tag"
+            value={tag}
+            options={tagOptions}
+            onChange={onTagChange}
+          />
+        ) : null}
         <FilterSelect
           label="Sort"
           value={sort}
@@ -90,19 +128,9 @@ export function TodoFilterBar({
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onToggleSelectionMode}
-          className={cn(
-            "text-sm transition-colors",
-            selectionMode
-              ? "font-medium text-accent"
-              : "text-text-muted hover:text-text"
-          )}
-        >
-          {selectionMode ? "Exit selection" : "Select entries"}
-        </button>
+      <div className="flex items-center gap-1.5 border-t border-border pt-3 text-text-faint">
+        <SlidersHorizontal size={12} />
+        <span className="text-xs">Refine your view</span>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils.js";
 
 const inputClassName =
-  "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm shadow-none focus:border-accent focus:ring-1 focus:ring-accent";
+  "w-full rounded-md border border-border-strong bg-surface-raised px-3 py-2 text-sm shadow-sm";
 
 export function InlineTextField({
   value,
@@ -80,7 +80,7 @@ export function InlineTextField({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "w-full text-left transition-colors hover:text-accent",
+        "w-full rounded-md text-left transition-colors hover:bg-surface-alt/50",
         displayClassName
       )}
     >
@@ -158,14 +158,14 @@ export function InlineTextArea({
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className="w-full whitespace-pre-wrap text-left text-base leading-relaxed text-text-muted transition-colors hover:text-text"
+      className="w-full whitespace-pre-wrap rounded-md text-left text-base leading-relaxed text-text-muted transition-colors hover:bg-surface-alt/50 hover:text-text"
     >
       {value || placeholder}
     </button>
   );
 }
 
-export function InlineDateField({ value, onSave, label, displayClassName }) {
+export function InlineDateField({ value, onSave, label, displayClassName, pill }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState("");
@@ -225,22 +225,27 @@ export function InlineDateField({ value, onSave, label, displayClassName }) {
     );
   }
 
+  const displayLabel = value
+    ? new Date(value).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Add due date";
+
   return (
     <button
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "text-sm transition-colors hover:text-accent",
+        pill
+          ? "tag-chip cursor-pointer text-sm transition-opacity hover:opacity-80"
+          : "text-sm transition-colors hover:opacity-80",
         displayClassName
       )}
     >
-      {value
-        ? new Date(value).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "Add due date"}
+      {pill ? <span className="text-text-faint">Due · </span> : null}
+      {displayLabel}
     </button>
   );
 }
@@ -252,6 +257,7 @@ export function InlineSelectField({
   options,
   displayValue,
   displayClassName,
+  pill,
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -314,11 +320,14 @@ export function InlineSelectField({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "inline-flex items-center gap-1.5 text-sm transition-colors hover:opacity-80",
+        pill
+          ? "tag-chip cursor-pointer text-sm font-medium transition-opacity hover:opacity-80"
+          : "inline-flex items-center gap-1.5 text-sm transition-colors hover:opacity-80",
         displayClassName
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {!pill ? <span className="h-1.5 w-1.5 rounded-full bg-current" /> : null}
+      {pill ? <span className="text-text-faint">{label} · </span> : null}
       {displayValue}
     </button>
   );
@@ -399,10 +408,7 @@ export function InlineTagsField({ value, onSave, tags }) {
       {tags?.length ? (
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-border bg-surface-alt px-2.5 py-0.5 text-xs text-text-muted"
-            >
+            <span key={tag} className="tag-chip">
               {tag}
             </span>
           ))}

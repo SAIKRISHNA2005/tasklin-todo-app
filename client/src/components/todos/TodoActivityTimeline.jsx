@@ -18,43 +18,27 @@ export function TodoActivityTimeline({ createdAt, updatedAt }) {
   if (updatedAt && createdAt && new Date(updatedAt).getTime() !== new Date(createdAt).getTime()) {
     events.push({
       id: "updated",
-      label: "Last updated",
+      label: "Last edited",
       date: updatedAt,
     });
   }
 
   return (
     <section className="space-y-4">
-      <h2 className="font-heading text-sm font-semibold uppercase tracking-[0.14em] text-text-muted">
-        Activity
-      </h2>
-      <div className="border-t border-border pt-4">
-        <ol className="space-y-5">
-          {events.map((event, index) => (
-            <li key={event.id} className="relative flex gap-4 pl-5">
-              {index < events.length - 1 ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute bottom-[-1.25rem] left-[0.27rem] top-3 w-px bg-border"
-                />
-              ) : null}
-              <span
-                aria-hidden="true"
-                className="absolute left-0 top-1.5 h-2 w-2 rounded-full border border-border bg-surface"
-              />
-              <div className="space-y-0.5">
-                <p className="text-sm text-text-muted">{event.label}</p>
-                <time
-                  dateTime={event.date}
-                  className="text-xs text-text-muted"
-                >
-                  {formatTimestamp(event.date)}
-                </time>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <h2 className="section-label">Activity</h2>
+      <ol className="space-y-3">
+        {events.map((event) => (
+          <li
+            key={event.id}
+            className="flex items-baseline justify-between gap-4 rounded-md border border-border bg-surface px-3 py-2.5 text-sm"
+          >
+            <span className="font-medium text-text-muted">{event.label}</span>
+            <time dateTime={event.date} className="text-xs tabular-nums text-text-faint">
+              {formatTimestamp(event.date)}
+            </time>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

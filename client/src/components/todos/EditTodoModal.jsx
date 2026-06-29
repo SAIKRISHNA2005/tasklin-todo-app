@@ -55,7 +55,7 @@ export function EditTodoModal({ open, todo, onOpenChange, onSubmit, submitting }
       <DialogContent aria-describedby={undefined}>
         <form onSubmit={handleSubmit(handleFormSubmit)}>
           <DialogHeader>
-            <DialogTitle>Edit Entry</DialogTitle>
+            <DialogTitle>Edit task</DialogTitle>
           </DialogHeader>
 
           <TodoFormFields register={register} errors={errors} />
@@ -64,14 +64,14 @@ export function EditTodoModal({ open, todo, onOpenChange, onSubmit, submitting }
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 text-sm text-text-muted transition-colors hover:text-text"
+              className="btn-ghost"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !todo}
-              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="btn-primary"
             >
               Save
             </button>

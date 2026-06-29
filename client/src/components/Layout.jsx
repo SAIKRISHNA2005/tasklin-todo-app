@@ -1,34 +1,42 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { ListTodo } from "lucide-react";
 
 const navLinkClassName = ({ isActive }) =>
   [
-    "text-sm font-medium tracking-wide transition-colors",
-    isActive ? "text-accent" : "text-text-muted hover:text-text",
+    "rounded-md px-3.5 py-2 text-sm font-semibold transition-all",
+    isActive
+      ? "bg-surface-raised text-text shadow-sm"
+      : "text-text-muted hover:bg-surface-alt hover:text-text",
   ].join(" ");
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-background text-text">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex max-w-5xl items-baseline justify-between gap-6 px-6 py-5">
-          <div className="font-heading text-2xl font-semibold tracking-tight">
-            ZipTrrip
-          </div>
-          <nav className="flex items-center gap-5 font-body">
+    <div className="page-canvas min-h-screen text-text">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="app-shell flex items-center justify-between gap-4 py-3.5">
+          <NavLink
+            to="/"
+            className="group flex items-center gap-2.5 transition-opacity hover:opacity-85"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-surface shadow-sm">
+              <ListTodo size={17} strokeWidth={2.25} />
+            </span>
+            <span className="font-heading text-xl font-semibold tracking-normal">
+              ZipTrrip
+            </span>
+          </NavLink>
+
+          <nav className="flex items-center gap-1 font-body">
             <NavLink to="/" end className={navLinkClassName}>
-              Todo List
-            </NavLink>
-            <NavLink to="/todos/1" className={navLinkClassName}>
-              Todo Detail
+              Tasks
             </NavLink>
           </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
+      <main className="app-shell py-7 sm:py-9">
         <Outlet />
       </main>
     </div>
   );
 }
-

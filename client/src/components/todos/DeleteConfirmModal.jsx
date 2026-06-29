@@ -18,27 +18,23 @@ export function DeleteConfirmModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="sm">
         <DialogHeader>
-          <DialogTitle>Delete Entry</DialogTitle>
+          <DialogTitle>Delete task?</DialogTitle>
           <DialogDescription>
             {todo
-              ? `Are you sure you want to delete "${todo.title}"? This action cannot be undone.`
-              : "Are you sure you want to delete this entry? This action cannot be undone."}
+              ? `"${todo.title}" will be permanently removed.`
+              : "This task will be permanently removed."}
           </DialogDescription>
         </DialogHeader>
 
         <DialogFooter>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="px-4 py-2 text-sm text-text-muted transition-colors hover:text-text"
-          >
+          <button type="button" onClick={() => onOpenChange(false)} className="btn-ghost">
             Cancel
           </button>
           <button
             type="button"
             disabled={submitting || !todo}
             onClick={() => todo && onConfirm(todo._id)}
-            className="rounded-md bg-status-overdue px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="btn-primary !bg-status-overdue hover:!opacity-90"
           >
             Delete
           </button>

@@ -1,59 +1,74 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 
 export function TodoPagination({ page, pages, total, limit, onPageChange }) {
   if (pages <= 1) {
     return (
-      <div className="border-t border-border pt-4 text-sm text-text-muted">
-        {total} {total === 1 ? "entry" : "entries"}
+      <div className="pagination-bar">
+        <p className="text-xs text-text-faint">
+          {total} {total === 1 ? "task" : "tasks"}
+        </p>
       </div>
     );
   }
 
   const pageNumbers = Array.from({ length: pages }, (_, index) => index + 1);
+  const visiblePages = pageNumbers.filter(
+    (n) => n === 1 || n === pages || Math.abs(n - page) <= 1
+  );
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-      <p className="text-sm text-text-muted">
-        Page {page} of {pages} · {total} entries
+    <div className="pagination-bar">
+      <p className="text-xs text-text-muted">
+        {total} tasks · page {page} of {pages}
       </p>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         <button
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-40"
+          className="pagination-btn"
+          aria-label="Previous page"
         >
-          Previous
+          <ChevronLeft size={16} />
         </button>
 
-        {pageNumbers.map((pageNumber) => (
-          <button
-            key={pageNumber}
-            type="button"
-            onClick={() => onPageChange(pageNumber)}
-            className={cn(
-              "min-w-8 px-2 py-1.5 text-sm transition-colors",
-              pageNumber === page
-                ? "font-medium text-accent"
-                : "text-text-muted hover:text-text"
-            )}
-          >
-            {pageNumber}
-          </button>
-        ))}
+        {visiblePages.map((pageNumber, index) => {
+          const prev = visiblePages[index - 1];
+          const showEllipsis = prev && pageNumber - prev > 1;
+
+          return (
+            <span key={pageNumber} className="flex items-center">
+              {showEllipsis ? (
+                <span className="px-1 text-xs text-text-faint">…</span>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onPageChange(pageNumber)}
+                className={cn(
+                  "pagination-btn",
+                  pageNumber === page && "pagination-btn-active"
+                )}
+              >
+                {pageNumber}
+              </button>
+            </span>
+          );
+        })}
 
         <button
           type="button"
           disabled={page >= pages}
           onClick={() => onPageChange(page + 1)}
-          className="px-3 py-1.5 text-sm text-text-muted transition-colors hover:text-text disabled:opacity-40"
+          className="pagination-btn"
+          aria-label="Next page"
         >
-          Next
+          <ChevronRight size={16} />
         </button>
       </div>
 
-      <p className="text-xs text-text-muted">{limit} per page</p>
+      <p className="hidden text-xs text-text-faint sm:block">{limit} per page</p>
     </div>
   );
 }

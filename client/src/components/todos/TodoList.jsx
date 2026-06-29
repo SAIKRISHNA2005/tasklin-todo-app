@@ -9,17 +9,16 @@ export function TodoList({
   listQueryString,
   onToggleSelect,
   onToggleComplete,
-  onEdit,
   onDelete,
 }) {
   const sections = groupTodosByDueDate(todos);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {sections.map((section) => (
         <section key={section.key}>
-          <TodoSectionHeader label={section.label} />
-          <div className="mt-3 space-y-2">
+          <TodoSectionHeader label={section.label} count={section.todos.length} />
+          <div className="todo-card-grid mt-3">
             {section.todos.map((todo) => (
               <TodoRow
                 key={todo._id}
@@ -29,7 +28,6 @@ export function TodoList({
                 listQueryString={listQueryString}
                 onToggleSelect={onToggleSelect}
                 onToggleComplete={onToggleComplete}
-                onEdit={onEdit}
                 onDelete={onDelete}
               />
             ))}

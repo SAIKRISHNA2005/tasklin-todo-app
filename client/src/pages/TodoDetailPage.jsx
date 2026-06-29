@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useToast } from "../context/ToastContext.jsx";
 import {
   clearCurrentTodo,
   fetchTodoById,
   updateTodo,
+  deleteTodo,
 } from "../features/todos/todosSlice.js";
 import {
   buildTodoPayload,
@@ -35,7 +36,7 @@ import {
 } from "../components/todos/InlineEditableField.jsx";
 
 function getStatusLabel(status) {
-  return status === "completed" ? "Completed" : "Active";
+  return status === "completed" ? "Done" : "Active";
 }
 
 function getStatusClassName(status) {
@@ -45,13 +46,15 @@ function getStatusClassName(status) {
 export function TodoDetailPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showConfirm } = useToast();
   const { currentTodo, actionLoading } = useSelector((state) => state.todos);
 
   const [pageState, setPageState] = useState("loading");
 
   const backUrl = useMemo(() => buildListUrl(searchParams), [searchParams]);
+  const querySuffix = searchParams.toString() ? "?" + searchParams.toString() : "";
 
   const formValues = useMemo(() => {
     if (!currentTodo) {
@@ -89,7 +92,7 @@ export function TodoDetailPage() {
   const saveField = useCallback(
     async (field, value) => {
       if (!currentTodo || !formValues) {
-        throw new Error("Entry is not available.");
+        throw new Error("Task is not available.");
       }
 
       const nextValues = { ...formValues, [field]: value };
@@ -107,7 +110,7 @@ export function TodoDetailPage() {
         await dispatch(
           updateTodo({ id: currentTodo._id, todo: payload })
         ).unwrap();
-        showSuccess("Entry updated.");
+        showSuccess("Task updated.");
       } catch (message) {
         showError(message);
         throw message;
@@ -119,7 +122,7 @@ export function TodoDetailPage() {
   const saveStatus = useCallback(
     async (status) => {
       if (!currentTodo || !formValues) {
-        throw new Error("Entry is not available.");
+        throw new Error("Task is not available.");
       }
 
       const payload = buildTodoPayload(formValues, status);
@@ -128,7 +131,7 @@ export function TodoDetailPage() {
         await dispatch(
           updateTodo({ id: currentTodo._id, todo: payload })
         ).unwrap();
-        showSuccess("Entry updated.");
+        showSuccess("Task updated.");
       } catch (message) {
         showError(message);
         throw message;
@@ -137,17 +140,38 @@ export function TodoDetailPage() {
     [currentTodo, formValues, dispatch, showSuccess, showError]
   );
 
+  const confirmDelete = useCallback(() => {
+    if (!currentTodo) return;
+
+    showConfirm({
+      title: "Delete task?",
+      message: "\"" + currentTodo.title + "\" will be permanently removed.",
+      confirmLabel: "Delete",
+      tone: "danger",
+      onConfirm: async () => {
+        try {
+          await dispatch(deleteTodo(currentTodo._id)).unwrap();
+          showSuccess("Task deleted.");
+          navigate(backUrl);
+        } catch (message) {
+          showError(message);
+        }
+      },
+    });
+  }, [backUrl, currentTodo, dispatch, navigate, showConfirm, showError, showSuccess]);
+
+  const backLink = (
+    <Link to={backUrl} className="btn-ghost -ml-2 gap-1.5 !px-2">
+      <ArrowLeft size={15} />
+      Back
+    </Link>
+  );
+
   if (pageState === "loading" || (pageState === "ready" && !currentTodo)) {
     return (
       <section className="space-y-6">
-        <Link
-          to={backUrl}
-          className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
-        >
-          <ArrowLeft size={16} />
-          Back to list
-        </Link>
-        <div className="space-y-2">
+        {backLink}
+        <div className="todo-card-grid max-w-sm">
           <TodoRowSkeleton />
         </div>
       </section>
@@ -157,113 +181,112 @@ export function TodoDetailPage() {
   if (pageState === "not-found") {
     return (
       <section className="space-y-6">
-        <Link
-          to={backUrl}
-          className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
-        >
-          <ArrowLeft size={16} />
-          Back to list
-        </Link>
-        <TodoNotFoundState message="This entry doesn't exist or may have been deleted." />
+        {backLink}
+        <TodoNotFoundState message="This task doesn't exist or may have been deleted." />
       </section>
     );
   }
 
   return (
-    <article className="space-y-10">
-      <Link
-        to={backUrl}
-        className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
-      >
-        <ArrowLeft size={16} />
-        Back to list
-      </Link>
+    <article className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {backLink}
+        <div className="flex items-center gap-2">
+          <Link to={"/todos/" + currentTodo._id + "/edit" + querySuffix} className="btn-secondary">
+            <Pencil size={15} />
+            Edit
+          </Link>
+          <button type="button" onClick={confirmDelete} className="btn-danger">
+            <Trash2 size={15} />
+            Delete
+          </button>
+        </div>
+      </div>
 
-      <header className="space-y-6 pb-8">
-        <div className="space-y-4">
-          <InlineTextField
-            value={formValues.title}
-            label="Title"
-            placeholder="Untitled entry"
-            displayClassName="font-heading text-4xl font-semibold tracking-tight text-text"
-            inputClassName="font-heading text-3xl font-semibold"
-            onSave={(value) => saveField("title", value)}
-          />
-
-          <div className="flex flex-wrap items-center gap-4">
-            <InlineSelectField
-              value={currentTodo.status}
-              label="Status"
-              displayValue={getStatusLabel(currentTodo.status)}
-              displayClassName={getStatusClassName(currentTodo.status)}
-              options={[
-                { value: "pending", label: "Active" },
-                { value: "completed", label: "Completed" },
-              ]}
-              onSave={saveStatus}
+      <div className="detail-bento">
+        <div className="detail-main-card space-y-6">
+          <header className="space-y-5 border-b border-border pb-6">
+            <InlineTextField
+              value={formValues.title}
+              label="Title"
+              placeholder="Untitled task"
+              displayClassName="font-heading text-2xl font-semibold leading-tight tracking-tight text-text sm:text-3xl"
+              inputClassName="font-heading text-2xl font-semibold sm:text-3xl"
+              onSave={(value) => saveField("title", value)}
             />
 
-            <InlineSelectField
-              value={formValues.priority}
-              label="Priority"
-              displayValue={getPriorityLabel(formValues.priority)}
-              displayClassName={getPriorityClassName(formValues.priority)}
-              options={[
-                { value: "low", label: "Low" },
-                { value: "medium", label: "Medium" },
-                { value: "high", label: "High" },
-              ]}
-              onSave={(value) => saveField("priority", value)}
+            <div className="flex flex-wrap gap-2">
+              <InlineSelectField
+                value={currentTodo.status}
+                label="Status"
+                displayValue={getStatusLabel(currentTodo.status)}
+                displayClassName={getStatusClassName(currentTodo.status)}
+                options={[
+                  { value: "pending", label: "Active" },
+                  { value: "completed", label: "Done" },
+                ]}
+                onSave={saveStatus}
+                pill
+              />
+
+              <InlineSelectField
+                value={formValues.priority}
+                label="Priority"
+                displayValue={getPriorityLabel(formValues.priority)}
+                displayClassName={getPriorityClassName(formValues.priority)}
+                options={[
+                  { value: "low", label: "Low" },
+                  { value: "medium", label: "Medium" },
+                  { value: "high", label: "High" },
+                ]}
+                onSave={(value) => saveField("priority", value)}
+                pill
+              />
+
+              <InlineDateField
+                value={formValues.dueDate}
+                label="Due"
+                displayClassName={getDueDateClassName(
+                  currentTodo.dueDate,
+                  currentTodo.status
+                )}
+                onSave={(value) => saveField("dueDate", value)}
+                pill
+              />
+            </div>
+          </header>
+
+          <section className="space-y-2">
+            <h2 className="section-label">Notes</h2>
+            <InlineTextArea
+              value={formValues.description}
+              label="Description"
+              placeholder="Add notes about this task..."
+              onSave={(value) => saveField("description", value)}
             />
+          </section>
 
-            <InlineDateField
-              value={formValues.dueDate}
-              label="Due date"
-              displayClassName={getDueDateClassName(
-                currentTodo.dueDate,
-                currentTodo.status
-              )}
-              onSave={(value) => saveField("dueDate", value)}
+          <section className="space-y-2">
+            <h2 className="section-label">Tags</h2>
+            <InlineTagsField
+              value={formValues.tags}
+              tags={currentTodo.tags}
+              onSave={(value) => saveField("tags", value)}
             />
-          </div>
+          </section>
+
+          {actionLoading ? (
+            <p className="text-xs text-text-faint">Saving...</p>
+          ) : null}
         </div>
 
-        <div className="border-b border-border" />
-      </header>
-
-      <section className="space-y-8">
-        <div className="space-y-3">
-          <h2 className="font-heading text-sm font-semibold uppercase tracking-[0.14em] text-text-muted">
-            Description
-          </h2>
-          <InlineTextArea
-            value={formValues.description}
-            label="Description"
-            placeholder="Add a description..."
-            onSave={(value) => saveField("description", value)}
+        <aside className="detail-side-card">
+          <TodoActivityTimeline
+            createdAt={currentTodo.createdAt}
+            updatedAt={currentTodo.updatedAt}
           />
-        </div>
-
-        <div className="space-y-3">
-          <h2 className="font-heading text-sm font-semibold uppercase tracking-[0.14em] text-text-muted">
-            Tags
-          </h2>
-          <InlineTagsField
-            value={formValues.tags}
-            tags={currentTodo.tags}
-            onSave={(value) => saveField("tags", value)}
-          />
-        </div>
-
-        <TodoActivityTimeline
-          createdAt={currentTodo.createdAt}
-          updatedAt={currentTodo.updatedAt}
-        />
-      </section>
-
-      {actionLoading ? (
-        <p className="text-xs text-text-muted">Saving changes...</p>
-      ) : null}
+        </aside>
+      </div>
     </article>
   );
 }
