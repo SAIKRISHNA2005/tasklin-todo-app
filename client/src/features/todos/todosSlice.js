@@ -10,18 +10,24 @@ const initialState = {
     limit: 10,
     pages: 0,
   },
-  loading: false,
+  listLoading: false,
+  actionLoading: false,
   error: null,
+  rollbackSnapshots: {},
   filters: {
     status: "",
     priority: "",
     tag: "",
     search: "",
-    sort: "",
+    sort: "-createdAt",
     page: 1,
     limit: 10,
   },
 };
+
+function findTodoIndex(todos, id) {
+  return todos.findIndex((todo) => todo._id === id);
+}
 
 export const fetchTodos = createAsyncThunk(
   "todos/fetchTodos",
@@ -91,12 +97,56 @@ export const deleteTodo = createAsyncThunk(
   }
 );
 
+export const toggleTodoComplete = createAsyncThunk(
+  "todos/toggleTodoComplete",
+  async (id, { getState, rejectWithValue }) => {
+    const todo = getState().todos.todos.find((item) => item._id === id);
+    if (!todo) {
+      return rejectWithValue("Todo not found");
+    }
+
+    const nextStatus = todo.status === "completed" ? "pending" : "completed";
+
+    try {
+      return await todoService.patchTodo(id, { status: nextStatus });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const bulkCompleteTodos = createAsyncThunk(
+  "todos/bulkCompleteTodos",
+  async (ids, { rejectWithValue }) => {
+    try {
+      const results = await Promise.all(
+        ids.map((id) => todoService.patchTodo(id, { status: "completed" }))
+      );
+      return results;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const bulkDeleteTodos = createAsyncThunk(
+  "todos/bulkDeleteTodos",
+  async (ids, { rejectWithValue }) => {
+    try {
+      await Promise.all(ids.map((id) => todoService.deleteTodo(id)));
+      return ids;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const todosSlice = createSlice({
   name: "todos",
   initialState,
   reducers: {
     setFilters(state, action) {
-      state.filters = { ...state.filters, ...action.payload };
+      state.filters = { ...state.filters, ...action.payload, page: 1 };
     },
     setSearch(state, action) {
       state.filters.search = action.payload;
@@ -104,6 +154,7 @@ const todosSlice = createSlice({
     },
     setSort(state, action) {
       state.filters.sort = action.payload;
+      state.filters.page = 1;
     },
     setPage(state, action) {
       state.filters.page = action.payload;
@@ -118,48 +169,132 @@ const todosSlice = createSlice({
     clearCurrentTodo(state) {
       state.currentTodo = null;
     },
+    saveRollbackSnapshot(state, action) {
+      const { id } = action.payload;
+      const index = findTodoIndex(state.todos, id);
+      if (index !== -1) {
+        state.rollbackSnapshots[id] = { ...state.todos[index] };
+      }
+    },
+    saveBulkRollbackSnapshots(state, action) {
+      action.payload.forEach((id) => {
+        const index = findTodoIndex(state.todos, id);
+        if (index !== -1) {
+          state.rollbackSnapshots[id] = { ...state.todos[index] };
+        }
+      });
+    },
+    applyOptimisticPatch(state, action) {
+      const { id, updates } = action.payload;
+      const index = findTodoIndex(state.todos, id);
+      if (index !== -1) {
+        state.todos[index] = { ...state.todos[index], ...updates };
+      }
+    },
+    applyOptimisticBulkComplete(state, action) {
+      action.payload.forEach((id) => {
+        const index = findTodoIndex(state.todos, id);
+        if (index !== -1) {
+          state.todos[index] = {
+            ...state.todos[index],
+            status: "completed",
+          };
+        }
+      });
+    },
+    applyOptimisticBulkDelete(state, action) {
+      const ids = new Set(action.payload);
+      state.todos = state.todos.filter((todo) => !ids.has(todo._id));
+      state.pagination.total = Math.max(
+        0,
+        state.pagination.total - action.payload.length
+      );
+    },
+    revertOptimisticChange(state, action) {
+      const { id } = action.payload;
+      const snapshot = state.rollbackSnapshots[id];
+      const index = findTodoIndex(state.todos, id);
+
+      if (snapshot && index === -1) {
+        state.todos.push(snapshot);
+        state.pagination.total += 1;
+      } else if (snapshot && index !== -1) {
+        state.todos[index] = snapshot;
+      }
+
+      delete state.rollbackSnapshots[id];
+    },
+    revertBulkOptimisticChanges(state, action) {
+      action.payload.forEach((id) => {
+        const snapshot = state.rollbackSnapshots[id];
+        const index = findTodoIndex(state.todos, id);
+
+        if (snapshot && index === -1) {
+          state.todos.push(snapshot);
+          state.pagination.total += 1;
+        } else if (snapshot && index !== -1) {
+          state.todos[index] = snapshot;
+        }
+
+        delete state.rollbackSnapshots[id];
+      });
+    },
+    clearRollbackSnapshots(state, action) {
+      action.payload.forEach((id) => {
+        delete state.rollbackSnapshots[id];
+      });
+    },
   },
   extraReducers: (builder) => {
-    const setPending = (state) => {
-      state.loading = true;
-      state.error = null;
-    };
-
-    const setRejected = (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    };
-
     builder
-      .addCase(fetchTodos.pending, setPending)
+      .addCase(fetchTodos.pending, (state) => {
+        state.listLoading = true;
+        state.error = null;
+      })
       .addCase(fetchTodos.fulfilled, (state, action) => {
-        state.loading = false;
+        state.listLoading = false;
         state.todos = action.payload.todos;
         state.pagination = action.payload.pagination;
       })
-      .addCase(fetchTodos.rejected, setRejected)
+      .addCase(fetchTodos.rejected, (state, action) => {
+        state.listLoading = false;
+        state.error = action.payload;
+      })
 
-      .addCase(fetchTodoById.pending, setPending)
+      .addCase(fetchTodoById.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
       .addCase(fetchTodoById.fulfilled, (state, action) => {
-        state.loading = false;
+        state.actionLoading = false;
         state.currentTodo = action.payload;
       })
-      .addCase(fetchTodoById.rejected, setRejected)
+      .addCase(fetchTodoById.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
 
-      .addCase(createTodo.pending, setPending)
+      .addCase(createTodo.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
       .addCase(createTodo.fulfilled, (state, action) => {
-        state.loading = false;
+        state.actionLoading = false;
         state.todos.unshift(action.payload);
         state.pagination.total += 1;
       })
-      .addCase(createTodo.rejected, setRejected)
+      .addCase(createTodo.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
 
-      .addCase(updateTodo.pending, setPending)
+      .addCase(updateTodo.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
       .addCase(updateTodo.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.todos.findIndex(
-          (todo) => todo._id === action.payload._id
-        );
+        state.actionLoading = false;
+        const index = findTodoIndex(state.todos, action.payload._id);
         if (index !== -1) {
           state.todos[index] = action.payload;
         }
@@ -167,14 +302,13 @@ const todosSlice = createSlice({
           state.currentTodo = action.payload;
         }
       })
-      .addCase(updateTodo.rejected, setRejected)
+      .addCase(updateTodo.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
 
-      .addCase(patchTodo.pending, setPending)
       .addCase(patchTodo.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.todos.findIndex(
-          (todo) => todo._id === action.payload._id
-        );
+        const index = findTodoIndex(state.todos, action.payload._id);
         if (index !== -1) {
           state.todos[index] = action.payload;
         }
@@ -182,18 +316,126 @@ const todosSlice = createSlice({
           state.currentTodo = action.payload;
         }
       })
-      .addCase(patchTodo.rejected, setRejected)
+      .addCase(patchTodo.rejected, (state, action) => {
+        state.error = action.payload;
+      })
 
-      .addCase(deleteTodo.pending, setPending)
-      .addCase(deleteTodo.fulfilled, (state, action) => {
-        state.loading = false;
-        state.todos = state.todos.filter((todo) => todo._id !== action.payload);
-        state.pagination.total = Math.max(0, state.pagination.total - 1);
-        if (state.currentTodo?._id === action.payload) {
-          state.currentTodo = null;
+      .addCase(toggleTodoComplete.pending, (state, action) => {
+        const id = action.meta.arg;
+        const index = findTodoIndex(state.todos, id);
+        if (index !== -1) {
+          state.rollbackSnapshots[id] = { ...state.todos[index] };
+          state.todos[index].status =
+            state.todos[index].status === "completed" ? "pending" : "completed";
         }
       })
-      .addCase(deleteTodo.rejected, setRejected);
+      .addCase(toggleTodoComplete.fulfilled, (state, action) => {
+        const index = findTodoIndex(state.todos, action.payload._id);
+        if (index !== -1) {
+          state.todos[index] = action.payload;
+        }
+        delete state.rollbackSnapshots[action.payload._id];
+      })
+      .addCase(toggleTodoComplete.rejected, (state, action) => {
+        const id = action.meta.arg;
+        const snapshot = state.rollbackSnapshots[id];
+        const index = findTodoIndex(state.todos, id);
+        if (snapshot && index !== -1) {
+          state.todos[index] = snapshot;
+        }
+        delete state.rollbackSnapshots[id];
+        state.error = action.payload;
+      })
+
+      .addCase(deleteTodo.pending, (state, action) => {
+        const id = action.meta.arg;
+        const index = findTodoIndex(state.todos, id);
+        if (index !== -1) {
+          state.rollbackSnapshots[id] = { ...state.todos[index] };
+          state.todos.splice(index, 1);
+          state.pagination.total = Math.max(0, state.pagination.total - 1);
+        }
+      })
+      .addCase(deleteTodo.fulfilled, (state, action) => {
+        delete state.rollbackSnapshots[action.payload];
+      })
+      .addCase(deleteTodo.rejected, (state, action) => {
+        const id = action.meta.arg;
+        const snapshot = state.rollbackSnapshots[id];
+        if (snapshot) {
+          state.todos.push(snapshot);
+          state.pagination.total += 1;
+        }
+        delete state.rollbackSnapshots[id];
+        state.error = action.payload;
+      })
+
+      .addCase(bulkCompleteTodos.pending, (state, action) => {
+        state.actionLoading = true;
+        action.meta.arg.forEach((id) => {
+          const index = findTodoIndex(state.todos, id);
+          if (index !== -1) {
+            state.rollbackSnapshots[id] = { ...state.todos[index] };
+            state.todos[index].status = "completed";
+          }
+        });
+      })
+      .addCase(bulkCompleteTodos.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        action.payload.forEach((todo) => {
+          const index = findTodoIndex(state.todos, todo._id);
+          if (index !== -1) {
+            state.todos[index] = todo;
+          }
+          delete state.rollbackSnapshots[todo._id];
+        });
+      })
+      .addCase(bulkCompleteTodos.rejected, (state, action) => {
+        state.actionLoading = false;
+        action.meta.arg.forEach((id) => {
+          const snapshot = state.rollbackSnapshots[id];
+          const index = findTodoIndex(state.todos, id);
+          if (snapshot && index !== -1) {
+            state.todos[index] = snapshot;
+          }
+          delete state.rollbackSnapshots[id];
+        });
+        state.error = action.payload;
+      })
+
+      .addCase(bulkDeleteTodos.pending, (state, action) => {
+        state.actionLoading = true;
+        const ids = new Set(action.meta.arg);
+        action.meta.arg.forEach((id) => {
+          const index = findTodoIndex(state.todos, id);
+          if (index !== -1) {
+            state.rollbackSnapshots[id] = { ...state.todos[index] };
+          }
+        });
+        state.todos = state.todos.filter((todo) => !ids.has(todo._id));
+        state.pagination.total = Math.max(
+          0,
+          state.pagination.total - action.meta.arg.length
+        );
+      })
+      .addCase(bulkDeleteTodos.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        action.payload.forEach((id) => {
+          delete state.rollbackSnapshots[id];
+        });
+      })
+      .addCase(bulkDeleteTodos.rejected, (state, action) => {
+        state.actionLoading = false;
+        action.meta.arg.forEach((id) => {
+          const snapshot = state.rollbackSnapshots[id];
+          if (snapshot) {
+            state.todos.push(snapshot);
+            state.pagination.total += 1;
+          }
+          delete state.rollbackSnapshots[id];
+        });
+        state.error = action.payload;
+      });
   },
 });
 
@@ -205,6 +447,14 @@ export const {
   setLimit,
   clearError,
   clearCurrentTodo,
+  saveRollbackSnapshot,
+  saveBulkRollbackSnapshots,
+  applyOptimisticPatch,
+  applyOptimisticBulkComplete,
+  applyOptimisticBulkDelete,
+  revertOptimisticChange,
+  revertBulkOptimisticChanges,
+  clearRollbackSnapshots,
 } = todosSlice.actions;
 
 export default todosSlice.reducer;

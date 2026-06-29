@@ -72,5 +72,25 @@
   .text-muted {
     color: var(--text-muted);
   }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--surface-alt) 0%,
+      color-mix(in srgb, var(--text-muted) 8%, var(--surface-alt)) 50%,
+      var(--surface-alt) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
 }
 
