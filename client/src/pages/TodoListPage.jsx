@@ -1,6 +1,22 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { fetchTodos } from "../features/todos/todosSlice.js";
 
 export function TodoListPage() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchTodos())
+      .unwrap()
+      .then((data) => {
+        console.log("[todos] fetched seeded data:", data.todos);
+      })
+      .catch((error) => {
+        console.error("[todos] fetch failed:", error);
+      });
+  }, [dispatch]);
+
   return (
     <section className="space-y-6">
       <header className="space-y-2">
