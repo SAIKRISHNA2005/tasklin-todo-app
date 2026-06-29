@@ -6,6 +6,7 @@ export function TodoList({
   todos,
   selectionMode,
   selectedIds,
+  listQueryString,
   onToggleSelect,
   onToggleComplete,
   onEdit,
@@ -25,6 +26,7 @@ export function TodoList({
                 todo={todo}
                 selectionMode={selectionMode}
                 selected={selectedIds.includes(todo._id)}
+                listQueryString={listQueryString}
                 onToggleSelect={onToggleSelect}
                 onToggleComplete={onToggleComplete}
                 onEdit={onEdit}

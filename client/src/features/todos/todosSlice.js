@@ -169,6 +169,9 @@ const todosSlice = createSlice({
     clearCurrentTodo(state) {
       state.currentTodo = null;
     },
+    hydrateFilters(state, action) {
+      state.filters = { ...state.filters, ...action.payload };
+    },
     saveRollbackSnapshot(state, action) {
       const { id } = action.payload;
       const index = findTodoIndex(state.todos, id);
@@ -447,6 +450,7 @@ export const {
   setLimit,
   clearError,
   clearCurrentTodo,
+  hydrateFilters,
   saveRollbackSnapshot,
   saveBulkRollbackSnapshots,
   applyOptimisticPatch,

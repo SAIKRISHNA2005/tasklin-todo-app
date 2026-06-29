@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Check, Circle, Pencil, Trash2 } from "lucide-react";
 import { cn } from "../../lib/utils.js";
+import { appendListQuery } from "../../utils/listQueryParams.js";
 import {
   formatDueDate,
   getDueDateClassName,
@@ -12,6 +13,7 @@ export function TodoRow({
   todo,
   selectionMode,
   selected,
+  listQueryString,
   onToggleSelect,
   onToggleComplete,
   onEdit,
@@ -66,7 +68,10 @@ export function TodoRow({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <Link
-                to={`/todos/${todo._id}`}
+                to={appendListQuery(
+                  `/todos/${todo._id}`,
+                  new URLSearchParams(listQueryString)
+                )}
                 className={cn(
                   "block font-medium text-text hover:text-accent",
                   isCompleted && "line-through text-text-muted"

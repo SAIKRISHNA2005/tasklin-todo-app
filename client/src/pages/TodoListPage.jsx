@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { useDebounce } from "../hooks/useDebounce.js";
 import { useToast } from "../context/ToastContext.jsx";
 import {
@@ -9,6 +10,7 @@ import {
   createTodo,
   deleteTodo,
   fetchTodos,
+  hydrateFilters,
   setFilters,
   setPage,
   setSearch,
@@ -17,6 +19,10 @@ import {
   updateTodo,
 } from "../features/todos/todosSlice.js";
 import { collectTags } from "../utils/todoHelpers.js";
+import {
+  filtersToSearchParams,
+  searchParamsToFilters,
+} from "../utils/listQueryParams.js";
 import { TodoSearchBar } from "../components/todos/TodoSearchBar.jsx";
 import { TodoFilterBar } from "../components/todos/TodoFilterBar.jsx";
 import { TodoList } from "../components/todos/TodoList.jsx";
@@ -31,11 +37,14 @@ import { DeleteConfirmModal } from "../components/todos/DeleteConfirmModal.jsx";
 export function TodoListPage() {
   const dispatch = useDispatch();
   const { showSuccess, showError } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { todos, listLoading, actionLoading, pagination, filters, error } =
     useSelector((state) => state.todos);
 
-  const [searchInput, setSearchInput] = useState(filters.search);
+  const [searchInput, setSearchInput] = useState(
+    () => searchParams.get("search") || ""
+  );
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [createOpen, setCreateOpen] = useState(false);
@@ -45,6 +54,23 @@ export function TodoListPage() {
   const debouncedSearch = useDebounce(searchInput, 300);
 
   const availableTags = useMemo(() => collectTags(todos), [todos]);
+  const listQueryString = searchParams.toString();
+
+  useEffect(() => {
+    const urlFilters = searchParamsToFilters(searchParams);
+    dispatch(hydrateFilters(urlFilters));
+    setSearchInput(urlFilters.search || "");
+  }, [searchParams, dispatch]);
+
+  useEffect(() => {
+    const nextParams = filtersToSearchParams(filters);
+    const current = searchParams.toString();
+    const next = nextParams.toString();
+
+    if (current !== next) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [filters, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (debouncedSearch !== filters.search) {
@@ -242,6 +268,7 @@ export function TodoListPage() {
             todos={todos}
             selectionMode={selectionMode}
             selectedIds={selectedIds}
+            listQueryString={listQueryString}
             onToggleSelect={toggleSelected}
             onToggleComplete={handleToggleComplete}
             onEdit={setEditingTodo}
