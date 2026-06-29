@@ -8,6 +8,8 @@ export function TodoList({
   selectedIds,
   onToggleSelect,
   onToggleComplete,
+  onEdit,
+  onDelete,
 }) {
   const sections = groupTodosByDueDate(todos);
 
@@ -25,6 +27,8 @@ export function TodoList({
                 selected={selectedIds.includes(todo._id)}
                 onToggleSelect={onToggleSelect}
                 onToggleComplete={onToggleComplete}
+                onEdit={onEdit}
+                onDelete={onDelete}
               />
             ))}
           </div>

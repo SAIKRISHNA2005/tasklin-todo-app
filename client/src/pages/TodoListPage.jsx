@@ -6,12 +6,15 @@ import {
   bulkCompleteTodos,
   bulkDeleteTodos,
   clearError,
+  createTodo,
+  deleteTodo,
   fetchTodos,
   setFilters,
   setPage,
   setSearch,
   setSort,
   toggleTodoComplete,
+  updateTodo,
 } from "../features/todos/todosSlice.js";
 import { collectTags } from "../utils/todoHelpers.js";
 import { TodoSearchBar } from "../components/todos/TodoSearchBar.jsx";
@@ -21,6 +24,9 @@ import { TodoRowSkeleton } from "../components/todos/TodoRowSkeleton.jsx";
 import { TodoEmptyState } from "../components/todos/TodoEmptyState.jsx";
 import { TodoPagination } from "../components/todos/TodoPagination.jsx";
 import { BulkActionBar } from "../components/todos/BulkActionBar.jsx";
+import { CreateTodoModal } from "../components/todos/CreateTodoModal.jsx";
+import { EditTodoModal } from "../components/todos/EditTodoModal.jsx";
+import { DeleteConfirmModal } from "../components/todos/DeleteConfirmModal.jsx";
 
 export function TodoListPage() {
   const dispatch = useDispatch();
@@ -32,6 +38,9 @@ export function TodoListPage() {
   const [searchInput, setSearchInput] = useState(filters.search);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState(null);
+  const [deletingTodo, setDeletingTodo] = useState(null);
 
   const debouncedSearch = useDebounce(searchInput, 300);
 
@@ -132,15 +141,66 @@ export function TodoListPage() {
     });
   }, []);
 
+  const handleCreate = useCallback(
+    async (payload) => {
+      try {
+        await dispatch(createTodo(payload)).unwrap();
+        await dispatch(fetchTodos()).unwrap();
+        setCreateOpen(false);
+        showSuccess("Entry created.");
+      } catch (message) {
+        showError(message);
+      }
+    },
+    [dispatch, showSuccess, showError]
+  );
+
+  const handleUpdate = useCallback(
+    async (id, payload) => {
+      try {
+        await dispatch(updateTodo({ id, todo: payload })).unwrap();
+        await dispatch(fetchTodos()).unwrap();
+        setEditingTodo(null);
+        showSuccess("Entry updated.");
+      } catch (message) {
+        showError(message);
+      }
+    },
+    [dispatch, showSuccess, showError]
+  );
+
+  const handleDelete = useCallback(
+    async (id) => {
+      try {
+        await dispatch(deleteTodo(id)).unwrap();
+        setSelectedIds((current) => current.filter((item) => item !== id));
+        setDeletingTodo(null);
+        showSuccess("Entry deleted.");
+      } catch (message) {
+        showError(message);
+      }
+    },
+    [dispatch, showSuccess, showError]
+  );
+
   return (
     <section className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          Todo List
-        </h1>
-        <p className="text-sm text-text-muted">
-          A ledger of entries, grouped by due date.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">
+            Todo List
+          </h1>
+          <p className="text-sm text-text-muted">
+            A ledger of entries, grouped by due date.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        >
+          New Todo
+        </button>
       </header>
 
       <div className="space-y-5">
@@ -184,6 +244,8 @@ export function TodoListPage() {
             selectedIds={selectedIds}
             onToggleSelect={toggleSelected}
             onToggleComplete={handleToggleComplete}
+            onEdit={setEditingTodo}
+            onDelete={setDeletingTodo}
           />
         )}
 
@@ -195,6 +257,37 @@ export function TodoListPage() {
           onPageChange={(page) => dispatch(setPage(page))}
         />
       </div>
+
+      <CreateTodoModal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSubmit={handleCreate}
+        submitting={actionLoading}
+      />
+
+      <EditTodoModal
+        open={Boolean(editingTodo)}
+        todo={editingTodo}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingTodo(null);
+          }
+        }}
+        onSubmit={handleUpdate}
+        submitting={actionLoading}
+      />
+
+      <DeleteConfirmModal
+        open={Boolean(deletingTodo)}
+        todo={deletingTodo}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingTodo(null);
+          }
+        }}
+        onConfirm={handleDelete}
+        submitting={actionLoading}
+      />
     </section>
   );
 }

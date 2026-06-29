@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Check, Circle } from "lucide-react";
+import { Check, Circle, Pencil, Trash2 } from "lucide-react";
 import { cn } from "../../lib/utils.js";
 import {
   formatDueDate,
@@ -14,6 +14,8 @@ export function TodoRow({
   selected,
   onToggleSelect,
   onToggleComplete,
+  onEdit,
+  onDelete,
 }) {
   const isCompleted = todo.status === "completed";
   const dueDateLabel = formatDueDate(todo.dueDate);
@@ -84,26 +86,47 @@ export function TodoRow({
               ) : null}
             </div>
 
-            <div className="flex shrink-0 flex-col items-end gap-1 text-right">
-              {dueDateLabel ? (
+            <div className="flex shrink-0 items-start gap-3">
+              <div className="flex flex-col items-end gap-1 text-right">
+                {dueDateLabel ? (
+                  <span
+                    className={cn(
+                      "text-xs",
+                      getDueDateClassName(todo.dueDate, todo.status)
+                    )}
+                  >
+                    {dueDateLabel}
+                  </span>
+                ) : null}
                 <span
                   className={cn(
-                    "text-xs",
-                    getDueDateClassName(todo.dueDate, todo.status)
+                    "inline-flex items-center gap-1.5 text-xs",
+                    getPriorityClassName(todo.priority)
                   )}
                 >
-                  {dueDateLabel}
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {getPriorityLabel(todo.priority)}
                 </span>
-              ) : null}
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-xs",
-                  getPriorityClassName(todo.priority)
-                )}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {getPriorityLabel(todo.priority)}
-              </span>
+              </div>
+
+              <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => onEdit(todo)}
+                  className="p-1 text-text-muted transition-colors hover:text-accent"
+                  aria-label={`Edit ${todo.title}`}
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(todo)}
+                  className="p-1 text-text-muted transition-colors hover:text-status-overdue"
+                  aria-label={`Delete ${todo.title}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           </div>
 
