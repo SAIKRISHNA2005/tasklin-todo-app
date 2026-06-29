@@ -1,19 +1,14 @@
-import { FileQuestion } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export function TodoNotFoundState({ message }) {
+export function TodoNotFoundState({ backUrl = "/", message = "Todo not found" }) {
   return (
-    <div className="bento-tile flex flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface-raised text-text-faint shadow-sm">
-        <FileQuestion size={26} strokeWidth={1.5} />
+    <div className="setup-card details-content-card">
+      <h2>{message}</h2>
+      <div className="accessory-view" style={{ borderBlockStart: "none", marginBlockStart: 0, paddingBlockStart: 0 }}>
+        <Link to={backUrl} className="btn btn-secondary">
+          Back to Todo List
+        </Link>
       </div>
-      <h3 className="font-heading text-xl font-semibold text-text">
-        Task not found
-      </h3>
-      <p className="mt-2 max-w-sm text-sm leading-relaxed text-text-muted">{message}</p>
-      <Link to="/" className="btn-secondary mt-7">
-        Go to tasks
-      </Link>
     </div>
   );
 }

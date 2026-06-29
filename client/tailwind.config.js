@@ -25,8 +25,8 @@ export default {
         "status-due-soon": "var(--status-due-soon)",
       },
       fontFamily: {
-        heading: ['"Fraunces"', 'ui-serif', 'Georgia', 'serif'],
-        body: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ["ui-sans-serif", "system-ui", "sans-serif"],
+        body: ["ui-sans-serif", "system-ui", "sans-serif"],
       },
       borderRadius: {
         sm: "var(--radius-sm)",
@@ -47,3 +47,4 @@ export default {
   },
   plugins: [],
 };
+

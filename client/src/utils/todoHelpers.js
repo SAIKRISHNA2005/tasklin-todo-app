@@ -131,3 +131,41 @@ export function comparePriority(a, b) {
     (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)
   );
 }
+
+export function isTodoOverdue(todo) {
+  if (todo.status === "completed" || !todo.dueDate) {
+    return false;
+  }
+  return startOfDay(new Date(todo.dueDate)) < startOfDay(new Date());
+}
+
+export function getTodoStatusBadge(todo) {
+  if (todo.status === "completed") {
+    return { label: "Completed", className: "badge-status-completed" };
+  }
+  if (isTodoOverdue(todo)) {
+    return { label: "Overdue", className: "badge-status-overdue" };
+  }
+  return { label: "Pending", className: "badge-status-pending" };
+}
+
+export function formatTagsLabel(tags) {
+  if (!tags?.length) {
+    return "General";
+  }
+  return tags.join(", ");
+}
+
+export function formatDateTime(value) {
+  if (!value) {
+    return "Not available";
+  }
+
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

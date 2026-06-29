@@ -12,22 +12,20 @@ export function BulkActionBar({
 
   return (
     <div className="bulk-bar">
-      <p className="text-sm font-semibold">
-        {selectedCount} selected
-      </p>
+      <p className="bulk-bar-label">{selectedCount} selected</p>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={onSelectAll} className="btn-ghost text-sm">
+      <div className="bulk-bar-actions">
+        <button type="button" onClick={onSelectAll} className="btn btn-sm btn-secondary">
           All on page
         </button>
-        <button type="button" onClick={onClearSelection} className="btn-ghost text-sm">
+        <button type="button" onClick={onClearSelection} className="btn btn-sm btn-secondary">
           Clear
         </button>
         <button
           type="button"
           disabled={actionLoading}
           onClick={onBulkComplete}
-          className="btn-secondary !py-1.5 text-sm"
+          className="btn btn-sm btn-success"
         >
           Complete
         </button>
@@ -35,7 +33,7 @@ export function BulkActionBar({
           type="button"
           disabled={actionLoading}
           onClick={onBulkDelete}
-          className="btn-danger text-sm"
+          className="btn btn-sm btn-danger"
         >
           Delete
         </button>

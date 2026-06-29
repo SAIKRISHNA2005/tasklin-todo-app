@@ -56,7 +56,7 @@ export function DialogHeader({ className, ...props }) {
 export function DialogTitle({ className, ...props }) {
   return (
     <DialogPrimitive.Title
-      className={cn("font-heading text-xl font-semibold tracking-tight text-text", className)}
+      className={cn("text-xl font-bold tracking-normal text-text", className)}
       {...props}
     />
   );

@@ -1,11 +1,8 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "../../lib/utils.js";
-
 export function TodoPagination({ page, pages, total, limit, onPageChange }) {
   if (pages <= 1) {
     return (
       <div className="pagination-bar">
-        <p className="text-xs text-text-faint">
+        <p>
           {total} {total === 1 ? "task" : "tasks"}
         </p>
       </div>
@@ -19,11 +16,11 @@ export function TodoPagination({ page, pages, total, limit, onPageChange }) {
 
   return (
     <div className="pagination-bar">
-      <p className="text-xs text-text-muted">
+      <p>
         {total} tasks · page {page} of {pages}
       </p>
 
-      <div className="flex items-center gap-0.5">
+      <div className="pagination-controls">
         <button
           type="button"
           disabled={page <= 1}
@@ -31,7 +28,7 @@ export function TodoPagination({ page, pages, total, limit, onPageChange }) {
           className="pagination-btn"
           aria-label="Previous page"
         >
-          <ChevronLeft size={16} />
+          Prev
         </button>
 
         {visiblePages.map((pageNumber, index) => {
@@ -39,17 +36,18 @@ export function TodoPagination({ page, pages, total, limit, onPageChange }) {
           const showEllipsis = prev && pageNumber - prev > 1;
 
           return (
-            <span key={pageNumber} className="flex items-center">
+            <span key={pageNumber} style={{ display: "flex", alignItems: "center" }}>
               {showEllipsis ? (
-                <span className="px-1 text-xs text-text-faint">…</span>
+                <span style={{ paddingInline: "4px", color: "var(--display-onlight-tertiary)" }}>
+                  …
+                </span>
               ) : null}
               <button
                 type="button"
                 onClick={() => onPageChange(pageNumber)}
-                className={cn(
-                  "pagination-btn",
-                  pageNumber === page && "pagination-btn-active"
-                )}
+                className={
+                  "pagination-btn" + (pageNumber === page ? " pagination-btn-active" : "")
+                }
               >
                 {pageNumber}
               </button>
@@ -64,11 +62,11 @@ export function TodoPagination({ page, pages, total, limit, onPageChange }) {
           className="pagination-btn"
           aria-label="Next page"
         >
-          <ChevronRight size={16} />
+          Next
         </button>
       </div>
 
-      <p className="hidden text-xs text-text-faint sm:block">{limit} per page</p>
+      <p>{limit} per page</p>
     </div>
   );
 }
