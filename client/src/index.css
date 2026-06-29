@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Design tokens (light) */
+  --background: #FAF8F3;
+  --surface: #FFFFFF;
+  --surface-alt: #FCFAF5;
+  --text: #1C1B19;
+  --text-muted: #6B675F;
+  --accent: #C2541F;
+  --status-done: #5B7B57;
+  --status-overdue: #A23E2E;
+  --status-due-soon: #B8862E;
+  --border: rgba(28, 27, 25, 0.12);
+}
+
+.dark {
+  /* Design tokens (dark) */
+  --background: #1B1A16;
+  --surface: #23221D;
+  --surface-alt: #23221D;
+  --text: #F2EEE3;
+  --text-muted: #A8A299;
+  --accent: #D9713C;
+  --status-done: #7FA178;
+  --status-overdue: #C9604C;
+  --status-due-soon: #D6A445;
+  --border: rgba(242, 238, 227, 0.12);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--text);
+    text-rendering: geometricPrecision;
+    font-family: "Inter", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Lora", "Fraunces", ui-serif, Georgia, serif;
+    font-weight: 600;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    outline: none;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    box-shadow: 0 0 0 2px var(--accent), 0 0 0 3px var(--background);
+  }
+}
+
+@layer components {
+  .text-muted {
+    color: var(--text-muted);
+  }
+}
+
